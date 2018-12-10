@@ -1,0 +1,6 @@
+name: farmOS Sync
+description: Features for syncronizing records from farmOS into the local database.
+type: module
+version: 1.x
+core: 8.x
+package: farmOS
