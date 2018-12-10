@@ -1,0 +1,16 @@
+# Set configuration defaults. This schema describes the farm_sync.settings
+# config. The defaults for this config are set in
+# config/install/farm_sync.settings.yml.
+farm_sync.settings:
+  type: config_object
+  label: 'farmOS Sync settings'
+  mapping:
+    hostname:
+      type: text
+      label: 'farmOS hostname'
+    username:
+      type: text
+      label: 'farmOS username'
+    password:
+      type: text
+      label: 'farmOS password'
