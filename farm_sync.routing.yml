@@ -1,0 +1,7 @@
+farm_sync.form:
+  path: '/farmOS/sync'
+  defaults:
+    _form:  '\Drupal\farm_sync\Form\FarmSyncForm'
+    _title: 'farmOS Sync'
+  requirements:
+    _permission: 'sync farmOS entities'
