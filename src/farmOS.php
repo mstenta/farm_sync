@@ -2,8 +2,6 @@
 
 namespace Drupal\farm_sync;
 
-use Drupal\Component\Serialization\Json;
-use Drupal\Component\Utility\UrlHelper;
 use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Exception\RequestException;
 
@@ -172,7 +170,7 @@ class farmOS {
 
     // Convert the list of filters into query string parameters.
     if (!empty($filters)) {
-      $path .= '?' . UrlHelper::buildQuery($filters);
+      $path .= '?' . http_build_query($filters, '', '&', PHP_QUERY_RFC3986);
     }
 
     // Request the records from farmOS.
@@ -184,7 +182,7 @@ class farmOS {
       $code = $response->getStatusCode();
       if ($code == 200) {
         $body = $response->getBody()->getContents();
-        $data = Json::decode($body);
+        $data = json_decode($body, TRUE);
       }
       if (!empty($data['list'])) {
         $records = $data['list'];
