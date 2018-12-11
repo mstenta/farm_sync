@@ -24,6 +24,17 @@ class FarmSyncForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
+    // Add a set of checkboxes for records that can be synced.
+    $record_options = [
+      'areas' => $this->t('Areas'),
+    ];
+    $form['records'] = array(
+      '#type' => 'checkboxes',
+      '#title' => $this->t('Sync records'),
+      '#options' => $record_options,
+      '#required' => TRUE,
+    );
+
     // Group submit handlers in an actions element with a key of "actions" so
     // that it gets styled correctly, and so that other modules may add actions
     // to the form. This is not required, but is convention.
@@ -90,6 +101,17 @@ class FarmSyncForm extends FormBase {
     if (empty($authenticated)) {
       $message = $this->t('farmOS authentication failed. Refer to the watchdog logs for more information.');
       $messenger->addMessage($message, $messenger::TYPE_WARNING);
+      return;
+    }
+
+    // Currently 'areas' are the only type of record that can be synced.
+    /**
+     * @todo
+     * If more record types are added in the future, add logic here to sync
+     * them conditionally.
+     */
+    $record_types = $form_state->getValue('records');
+    if (empty($record_types['areas'])) {
       return;
     }
 
