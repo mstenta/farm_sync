@@ -4,6 +4,7 @@ namespace Drupal\farm_sync\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\farm_sync\farmOS;
 
 /**
  * Implements the FarmSyncForm form controller.
@@ -71,5 +72,28 @@ class FarmSyncForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
+    // Instantiate the Drupal messenger.
+    $messenger = \Drupal::messenger();
+
+    // Get the hostname, username, and password from configuration.
+    $hostname = \Drupal::config('farm_sync.settings')->get('hostname');
+    $username = \Drupal::config('farm_sync.settings')->get('username');
+    $password = \Drupal::config('farm_sync.settings')->get('password');
+
+    // Create a new farmOS API instance.
+    $farmOS = new farmOS($hostname, $username, $password);
+
+    // Authenticate with farmOS.
+    $authenticated = $farmOS->authenticate();
+
+    // If authentication failed, print a message and bail.
+    if (empty($authenticated)) {
+      $message = $this->t('farmOS authentication failed. Refer to the watchdog logs for more information.');
+      $messenger->addMessage($message, $messenger::TYPE_WARNING);
+      return;
+    }
+
+    // Success!
+    $messenger->addMessage('Success!');
   }
 }
