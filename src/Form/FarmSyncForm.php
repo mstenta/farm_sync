@@ -93,7 +93,40 @@ class FarmSyncForm extends FormBase {
       return;
     }
 
-    // Success!
-    $messenger->addMessage('Success!');
+    // Get a list of farm areas.
+    $areas = $farmOS->getAreas();
+
+    // If no areas were returned, bail.
+    if (empty($areas)) {
+      $message = $this->t('No areas were found in farmOS. Sync aborted.');
+      $messenger->addMessage($message, $messenger::TYPE_WARNING);
+      return;
+    }
+
+    // Get a database connection and start a transaction.
+    $connection = \Drupal::database();
+    $txn = $connection->startTransaction();
+
+    // Iterate through the areas and merge them into the {farm_sync_areas}
+    // database table.
+    try {
+      foreach ($areas as $area) {
+        $connection->merge('farm_sync_areas')
+          ->key(['area_id' => $area['tid']])
+          ->fields([
+            'name' => $area['name'],
+            'type' => $area['field_farm_area_type'],
+            'geom' => $area['field_farm_geofield'][0]['geom'],
+          ])
+          ->execute();
+      }
+    }
+    catch (\Exception $e) {
+      $txn->rollBack();
+      watchdog_exception('farm_sync', $e);
+    }
+
+    // Display a success message.
+    $messenger->addMessage($this->t('@count areas were synced from farmOS.', array('@count' => count($areas))));
   }
 }
