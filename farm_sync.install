@@ -1,0 +1,55 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the farm_sync module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function farm_sync_schema() {
+  $schema['farm_sync_areas'] = [
+    'description' => 'Stores farm area data synced from farmOS.',
+    'fields' => [
+      'id' => [
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Area ID that is unique to this database.',
+      ],
+      'area_id' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The area ID in the remote farmOS database.',
+      ],
+      'name' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Name of the area.',
+      ],
+      'type' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Area type.',
+      ],
+      'geom' => [
+        'type' => 'text',
+        'size' => 'big',
+        'description' => 'Area geometry in WKT.',
+      ],
+    ],
+    'primary key' => ['id'],
+    'indexes' => [
+      'area_id' => ['area_id'],
+      'name' => ['name'],
+      'type' => ['type'],
+    ],
+  ];
+
+  return $schema;
+}
