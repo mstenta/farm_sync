@@ -129,6 +129,11 @@ class farmOS {
       $options['cookies'] = $this->jar;
     }
 
+    // Automatically add the token to the request, if it exists.
+    if (empty($options['headers']['X-CSRF-Token']) && !empty($this->token)) {
+      $options['headers']['X-CSRF-Token'] = $this->token;
+    }
+
     // If allow_redirects is not configured in the options, add configuration
     // to use strict RFC compliant redirects (so that POST data is forwarded to
     // the new destination). This allows for HTTP to be redirected to HTTPS
