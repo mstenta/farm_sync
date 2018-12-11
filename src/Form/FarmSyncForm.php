@@ -35,6 +35,14 @@ class FarmSyncForm extends FormBase {
       '#required' => TRUE,
     );
 
+    // Add a text field that allows the user to specify what type of areas
+    // should be synced.
+    $form['area_type'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Area type (machine name)'),
+      '#description' => $this->t('Optionally specify a specific area type that should be synced (using the area type machine name from farmOS). For example: "building" or "field"'),
+    );
+
     // Group submit handlers in an actions element with a key of "actions" so
     // that it gets styled correctly, and so that other modules may add actions
     // to the form. This is not required, but is convention.
@@ -115,8 +123,15 @@ class FarmSyncForm extends FormBase {
       return;
     }
 
+    // If an area type is specified, add a filter for it.
+    $filters = [];
+    $area_type = $form_state->getValue('area_type');
+    if (!empty($area_type)) {
+      $filters['field_farm_area_type'] = $area_type;
+    }
+
     // Get a list of farm areas.
-    $areas = $farmOS->getAreas();
+    $areas = $farmOS->getAreas($filters);
 
     // If no areas were returned, bail.
     if (empty($areas)) {
