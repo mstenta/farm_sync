@@ -2,6 +2,7 @@
 
 namespace Drupal\farm_sync;
 
+use Drupal\Component\Serialization\Json;
 use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Exception\RequestException;
 
@@ -90,6 +91,43 @@ class farmOS {
     else {
       return FALSE;
     }
+  }
+
+  /**
+   * Generic method for retrieving a list of records from farmOS.
+   *
+   * @param $entity_type
+   *   The record entity type.
+   *
+   * @return array
+   *   Returns an array of records, decoded from JSON.
+   */
+  public function getRecords($entity_type) {
+
+    // Start with an empty set of records.
+    $records = [];
+
+    // The path is the entity type with '.json' on the end.
+    $path = $entity_type . '.json';
+
+    // Request the records from farmOS.
+    $response = $this->httpRequest($path);
+
+    // If a response was received, and it has a status code of 200, parse it
+    // as JSON into the records array.
+    if (!empty($response)) {
+      $code = $response->getStatusCode();
+      if ($code == 200) {
+        $body = $response->getBody()->getContents();
+        $data = Json::decode($body);
+      }
+      if (!empty($data['list'])) {
+        $records = $data['list'];
+      }
+    }
+
+    // Return the records.
+    return $records;
   }
 
   /**
