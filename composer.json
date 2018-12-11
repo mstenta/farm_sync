@@ -1,7 +1,7 @@
 {
   "name": "drupal/farm_sync",
   "type": "drupal-module",
-  "description": "Features for syncronizing records from farmOS into the local database.",
+  "description": "Features for synchronizing records from farmOS into the local database.",
   "keywords": ["Drupal", "farmOS"],
   "license": "GPL-2.0+",
   "homepage": "https://github.com/mstenta/farm_sync",
