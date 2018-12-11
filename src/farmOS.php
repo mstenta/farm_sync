@@ -95,6 +95,62 @@ class farmOS {
   }
 
   /**
+   * Retrieve all farm area records.
+   *
+   * Areas are a unique case in the farmOS API, because they are represented as
+   * taxonomy terms. There isn't a built-in way of filtering taxonomy terms by
+   * their vocabulary machine name (eg: 'farm_areas'). Instead you must filter
+   * by the vocabulary ID, which may be different on each farmOS instance
+   * (based on the order in which the vocabularies are created). So, we need to
+   * make two requests: one to get a list of all vocabularies, so that we can
+   * find the ID of the farm_areas vocabulary, and a second request to get all
+   * terms in that vocabulary (all areas). This method abstracts those two
+   * requests into a single method, using the normal getRecords()  method
+   * internally.
+   *
+   * @param $filters
+   *   Additional filters to apply to the request. These will be added as
+   *   query parameters to the URL.
+   *
+   * @return array
+   *   Returns an array of area records.
+   */
+  public function getAreas($filters = []) {
+
+    // Start with an empty set of areas.
+    $areas = [];
+
+    // Get a list of all vocabularies.
+    $vocabs = $this->getRecords('taxonomy_vocabulary');
+
+    // If no vocabularies were found, bail.
+    if (empty($vocabs)) {
+      return $areas;
+    }
+
+    // Find the 'farm_areas' vocabulary ID.
+    $vid = 0;
+    foreach ($vocabs as $vocab) {
+      if (!empty($vocab['machine_name']) && $vocab['machine_name'] == 'farm_areas') {
+        $vid = $vocab['vid'];
+        break;
+      }
+    }
+
+    // If the vocabulary ID was not found, bail.
+    if (empty($vid)) {
+      return $areas;
+    }
+
+    // Get a list of areas (taxonomy terms in the 'farm_areas' vocabulary).
+    $filters['vocabulary'] = $vid;
+    $areas = $this->getRecords('taxonomy_term', $filters);
+
+    // Return the areas.
+    return $areas;
+  }
+
+  /**
    * Generic method for retrieving a list of records from farmOS.
    *
    * @param $entity_type
