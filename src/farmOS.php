@@ -3,6 +3,7 @@
 namespace Drupal\farm_sync;
 
 use Drupal\Component\Serialization\Json;
+use Drupal\Component\Utility\UrlHelper;
 use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Exception\RequestException;
 
@@ -98,17 +99,25 @@ class farmOS {
    *
    * @param $entity_type
    *   The record entity type.
+   * @param $filters
+   *   Additional filters to apply to the request. These will be added as
+   *   query parameters to the URL.
    *
    * @return array
    *   Returns an array of records, decoded from JSON.
    */
-  public function getRecords($entity_type) {
+  public function getRecords($entity_type, $filters = []) {
 
     // Start with an empty set of records.
     $records = [];
 
     // The path is the entity type with '.json' on the end.
     $path = $entity_type . '.json';
+
+    // Convert the list of filters into query string parameters.
+    if (!empty($filters)) {
+      $path .= '?' . UrlHelper::buildQuery($filters);
+    }
 
     // Request the records from farmOS.
     $response = $this->httpRequest($path);
