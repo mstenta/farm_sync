@@ -162,8 +162,34 @@ class farmOS {
    */
   public function getRecords($entity_type, $filters = []) {
 
-    // Start with an empty set of records.
-    $records = [];
+    // Get record data from the farmOS API.
+    $data = $this->getRecordData($entity_type, $filters);
+
+    // If the list of records is not empty, return it.
+    if (!empty($data['list'])) {
+      return $data['list'];
+    }
+
+    // Otherwise, return an empty array.
+    return [];
+  }
+
+  /**
+   * Retrieve raw record data from the farmOS API.
+   *
+   * @param $entity_type
+   *   The record entity type.
+   * @param $filters
+   *   Additional filters to apply to the request. These will be added as
+   *   query parameters to the URL.
+   *
+   * @return array
+   *   Returns raw data from the farmOS API, decoded from JSON.
+   */
+  public function getRecordData($entity_type, $filters = []) {
+
+    // Start with an empty set of data.
+    $data = [];
 
     // The path is the entity type with '.json' on the end.
     $path = $entity_type . '.json';
@@ -184,13 +210,10 @@ class farmOS {
         $body = $response->getBody()->getContents();
         $data = json_decode($body, TRUE);
       }
-      if (!empty($data['list'])) {
-        $records = $data['list'];
-      }
     }
 
-    // Return the records.
-    return $records;
+    // Return the data.
+    return $data;
   }
 
   /**
