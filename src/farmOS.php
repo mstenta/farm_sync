@@ -255,6 +255,8 @@ class farmOS {
   }
 
   /**
+   * Raw HTTP request helper function.
+   *
    * @param $path
    *   The API endpoint path (without hostname or leading/trailing slashes).
    * @param $method
