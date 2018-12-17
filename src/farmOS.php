@@ -213,6 +213,48 @@ class farmOS {
   }
 
   /**
+   * Determines how many pages of records are available for a given entity type
+   * and filter(s).
+   *
+   * @param $entity_type
+   *   The record entity type.
+   * @param $filters
+   *   Additional filters to apply to the request. These will be added as
+   *   query parameters to the URL.
+   *
+   * @return int
+   *   Returns an integer page count.
+   */
+  public function pageCount($entity_type, $filters = []) {
+
+    // Start with an empty page count.
+    $pages = 0;
+
+    // Get record data from the farmOS API.
+    $data = $this->getRecordData($entity_type, $filters);
+
+    // If the 'last' page is not set, bail.
+    if (empty($data['last'])) {
+      return $pages;
+    }
+
+    // Parse the last page number.
+    $last_page = 0;
+    $query = [];
+    $parts = parse_url($data['last']);
+    parse_str($parts['query'], $query);
+    if (isset($query['page'])) {
+      $last_page = $query['page'];
+    }
+
+    // The number of pages is the last page number plus one.
+    $pages = $last_page + 1;
+
+    // Return the page count.
+    return $pages;
+  }
+
+  /**
    * Retrieve raw record data from the farmOS API.
    *
    * @param $entity_type
