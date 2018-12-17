@@ -96,15 +96,7 @@ class farmOS {
    * Retrieve all farm area records.
    *
    * Areas are a unique case in the farmOS API, because they are represented as
-   * taxonomy terms. There isn't a built-in way of filtering taxonomy terms by
-   * their vocabulary machine name (eg: 'farm_areas'). Instead you must filter
-   * by the vocabulary ID, which may be different on each farmOS instance
-   * (based on the order in which the vocabularies are created). So, we need to
-   * make two requests: one to get a list of all vocabularies, so that we can
-   * find the ID of the farm_areas vocabulary, and a second request to get all
-   * terms in that vocabulary (all areas). This method abstracts those two
-   * requests into a single method, using the normal getRecords()  method
-   * internally.
+   * taxonomy terms. So this simply wraps the getTerms() method.
    *
    * @param $filters
    *   Additional filters to apply to the request. These will be added as
@@ -114,24 +106,49 @@ class farmOS {
    *   Returns an array of area records.
    */
   public function getAreas($filters = []) {
+    return $this->getTerms('farm_areas', $filters);
+  }
 
-    // Start with an empty set of areas.
-    $areas = [];
+  /**
+   * Generic method for retrieving terms from a given vocabulary.
+   *
+   * There isn't a built-in way of filtering taxonomy terms by their vocabulary
+   * machine name (eg: 'farm_areas'). Instead you must filter by the vocabulary
+   * ID, which may be different on each farmOS instance (based on the order in
+   * which the vocabularies are created). So, we need to make two requests: one
+   * to get a list of all vocabularies, so that we can find the ID of the
+   * vocabulary, and a second request to get all terms in that vocabulary. This
+   * method abstracts those two requests into a single method, using the normal
+   * getRecords() method internally.
+   *
+   * @param string $vocabulary
+   *   The vocabulary machine name.
+   * @param array $filters
+   *   Additional filters to apply to the request. These will be added as
+   *   query parameters to the URL.
+   *
+   * @return array
+   *   Returns an array of taxonomy term records.
+   */
+  public function getTerms($vocabulary, $filters = []) {
 
-    // Get the 'farm_areas' vocabulary ID.
-    $vid = $this->getVocabularyID('farm_areas');
+    // Start with an empty set of terms.
+    $terms = [];
+
+    // Get the vocabulary ID.
+    $vid = $this->getVocabularyID($vocabulary);
 
     // If the vocabulary ID was not found, bail.
     if (empty($vid)) {
-      return $areas;
+      return $terms;
     }
 
-    // Get a list of areas (taxonomy terms in the 'farm_areas' vocabulary).
+    // Get a list of areas (taxonomy terms in the vocabulary).
     $filters['vocabulary'] = $vid;
-    $areas = $this->getRecords('taxonomy_term', $filters);
+    $terms = $this->getRecords('taxonomy_term', $filters);
 
-    // Return the areas.
-    return $areas;
+    // Return the terms.
+    return $terms;
   }
 
   /**
