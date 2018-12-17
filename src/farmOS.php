@@ -48,6 +48,11 @@ class farmOS {
     // If any of the authentication credentials are empty, bail.
     if (empty($this->hostname) || empty($this->username) || empty($this->password)) {
       $message = 'farmOS authentication failed: missing hostname, username, or password.';
+      /**
+       * @todo
+       * Remove Drupal-specific code from this class.
+       * @see https://github.com/mstenta/farm_sync/issues/3
+       */
       \Drupal::logger('farm_sync')->error($message);
       return FALSE;
     }
@@ -334,6 +339,11 @@ class farmOS {
     $url = 'http://' . $this->hostname . '/' . $path;
 
     // Create an HTTP client.
+    /**
+     * @todo
+     * Remove Drupal-specific code from this class.
+     * @see https://github.com/mstenta/farm_sync/issues/3
+     */
     $client = \Drupal::httpClient();
 
     // Automatically add the cookie jar to the request, if it exists.
@@ -362,6 +372,11 @@ class farmOS {
       return $response;
     }
     catch (RequestException $e) {
+      /**
+       * @todo
+       * Remove Drupal-specific code from this class.
+       * @see https://github.com/mstenta/farm_sync/issues/3
+       */
       watchdog_exception('farm_sync', $e);
       if ($e->hasResponse()) {
         $response = $e->getResponse();
