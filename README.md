@@ -23,7 +23,11 @@ No special requirements.
 * Add your farmOS hostname, username, and password to your `settings.php` file
   (or to a `settings.local.php` that is included via `settings.php`). Be sure
   to protect access to this file in the same way that you would protect your
-  database credentials.
+  database credentials. For example:
+
+    $config['farm_sync.settings']['hostname'] = 'myfarm.farmos.net';
+    $config['farm_sync.settings']['username'] = 'Jane Farmer';
+    $config['farm_sync.settings']['password'] = 'mypassword123';
 
 ## MAINTAINERS
 
