@@ -257,6 +257,12 @@ class farmOS {
   /**
    * Retrieve raw record data from the farmOS API.
    *
+   * Note that this will only perform a single request. The farmOS API will
+   * only provide a limited set of results per request, along with information
+   * about how many pages are available. It is the responsibility of the code
+   * calling this function to add a 'page' filter and make multiple requests to
+   * get all pages of records.
+   *
    * @param $entity_type
    *   The record entity type.
    * @param $filters
