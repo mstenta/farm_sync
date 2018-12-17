@@ -118,22 +118,8 @@ class farmOS {
     // Start with an empty set of areas.
     $areas = [];
 
-    // Get a list of all vocabularies.
-    $vocabs = $this->getRecords('taxonomy_vocabulary');
-
-    // If no vocabularies were found, bail.
-    if (empty($vocabs)) {
-      return $areas;
-    }
-
-    // Find the 'farm_areas' vocabulary ID.
-    $vid = 0;
-    foreach ($vocabs as $vocab) {
-      if (!empty($vocab['machine_name']) && $vocab['machine_name'] == 'farm_areas') {
-        $vid = $vocab['vid'];
-        break;
-      }
-    }
+    // Get the 'farm_areas' vocabulary ID.
+    $vid = $this->getVocabularyID('farm_areas');
 
     // If the vocabulary ID was not found, bail.
     if (empty($vid)) {
@@ -146,6 +132,41 @@ class farmOS {
 
     // Return the areas.
     return $areas;
+  }
+
+  /**
+   * Generic method for getting a vocabulary ID.
+   *
+   * @param string $vocabulary
+   *   The machine name of the vocabulary.
+   *
+   * @return int
+   *   Returns the vocabulary ID.
+   */
+  public function getVocabularyID($vocabulary) {
+
+    // Start with an empty ID.
+    $vid = 0;
+
+    // Get a list of all vocabularies.
+    $vocabs = $this->getRecords('taxonomy_vocabulary');
+
+    // If no vocabularies were found, bail.
+    if (empty($vocabs)) {
+      return $vid;
+    }
+
+    // Find the vocabulary ID based on the machine name..
+    $vid = 0;
+    foreach ($vocabs as $vocab) {
+      if (!empty($vocab['machine_name']) && $vocab['machine_name'] == $vocabulary) {
+        $vid = $vocab['vid'];
+        break;
+      }
+    }
+
+    // Return the ID.
+    return $vid;
   }
 
   /**
