@@ -4,7 +4,6 @@ namespace Drupal\farm_sync\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\farm_sync\farmOS;
 
 /**
  * Implements the FarmSyncForm form controller.
@@ -91,79 +90,64 @@ class FarmSyncForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
-    // Instantiate the Drupal messenger.
-    $messenger = \Drupal::messenger();
-
-    // Get the hostname, username, and password from configuration.
-    $hostname = \Drupal::config('farm_sync.settings')->get('hostname');
-    $username = \Drupal::config('farm_sync.settings')->get('username');
-    $password = \Drupal::config('farm_sync.settings')->get('password');
-
-    // Create a new farmOS API instance.
-    $farmOS = new farmOS($hostname, $username, $password);
-
-    // Authenticate with farmOS.
-    $authenticated = $farmOS->authenticate();
-
-    // If authentication failed, print a message and bail.
-    if (empty($authenticated)) {
-      $message = $this->t('farmOS authentication failed. Refer to the watchdog logs for more information.');
-      $messenger->addMessage($message, $messenger::TYPE_WARNING);
-      return;
-    }
-
-    // Currently 'areas' are the only type of record that can be synced.
-    /**
-     * @todo
-     * If more record types are added in the future, add logic here to sync
-     * them conditionally.
-     */
+    // Iterate through the selected record types and assemble a list of batch
+    // operations.
     $record_types = $form_state->getValue('records');
-    if (empty($record_types['areas'])) {
-      return;
-    }
+    $operations = [];
+    foreach ($record_types as $type => $name) {
 
-    // If an area type is specified, add a filter for it.
-    $filters = [];
-    $area_type = $form_state->getValue('area_type');
-    if (!empty($area_type)) {
-      $filters['field_farm_area_type'] = $area_type;
-    }
+      // Each operation will consist of a function name and an array of other
+      // arguments that will be passed into the function.
+      $function = 'farm_sync_batch';
+      $arguments = [
+        'entity_type' => '',
+        'filters' => [],
+      ];
 
-    // Get a list of farm areas.
-    $areas = $farmOS->getAreas($filters);
+      // Switch through the supported record types to add additional arguments.
+      // The farm_sync_batch() function expects 'entity_type' and 'filters' for
+      // use in the getRecords() method. If 'entity_type' is 'taxonomy_term' it
+      // also expects 'vocabulary' to be set to the vocabulary machine name.
+      // The vocabulary ID will be looked up automatically and added to the
+      // filters.
+      switch ($type) {
 
-    // If no areas were returned, bail.
-    if (empty($areas)) {
-      $message = $this->t('No areas were found in farmOS. Sync aborted.');
-      $messenger->addMessage($message, $messenger::TYPE_WARNING);
-      return;
-    }
+        // Areas.
+        case 'areas':
+          $arguments['entity_type'] = 'taxonomy_term';
+          $arguments['vocabulary'] = 'farm_areas';
+          $area_type = $form_state->getValue('area_type');
+          if (!empty($area_type)) {
+            $arguments['filters']['field_farm_area_type'] = $area_type;
+          }
+          break;
 
-    // Get a database connection and start a transaction.
-    $connection = \Drupal::database();
-    $txn = $connection->startTransaction();
-
-    // Iterate through the areas and merge them into the {farm_sync_areas}
-    // database table.
-    try {
-      foreach ($areas as $area) {
-        $connection->merge('farm_sync_areas')
-          ->key(['area_id' => $area['tid']])
-          ->fields([
-            'name' => $area['name'],
-            'type' => $area['field_farm_area_type'],
-            'geom' => $area['field_farm_geofield'][0]['geom'],
-          ])
-          ->execute();
+        // If no match was found, skip it.
+        default:
+          continue;
       }
-    }
-    catch (\Exception $e) {
-      $txn->rollBack();
-      watchdog_exception('farm_sync', $e);
+
+      // Add the operation.
+      $operations[] = [
+        $function,
+        [$arguments],
+      ];
     }
 
-    // Display a success message.
-    $messenger->addMessage($this->t('@count areas were synced from farmOS.', array('@count' => count($areas))));
+    // If no operations were added, bail.
+    if (empty($operations)) {
+      return;
+    }
+
+    // Run the batch operation.
+    $batch = [
+      'operations' => $operations,
+      'finished' => 'farm_sync_batch_finished',
+      'title' => $this->t('Processing record sync'),
+      'init_message' => $this->t('Record sync is starting.'),
+      'progress_message' => $this->t('Processed @current out of @total.'),
+      'error_message' => $this->t('Record sync has encountered an error.'),
+    ];
+    batch_set($batch);
   }
 }

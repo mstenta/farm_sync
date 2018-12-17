@@ -6,6 +6,7 @@
  */
 
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\farm_sync\farmOS;
 
 /**
  * Implements hook_help().
@@ -16,5 +17,174 @@ function farm_sync_help($route_name, RouteMatchInterface $route_match) {
 
       // Help text for the farmOS sync form.
       return t('Use this form to sync entities from a farmOS site.');
+  }
+}
+
+/**
+ * Create an API connection to farmOS.
+ *
+ * @return \Drupal\farm_sync\farmOS|bool
+ *   Returns a farmOS API object if authentication is successful,
+ *   FALSE otherwise.
+ */
+function farm_sync_connect() {
+
+  // Instantiate the Drupal messenger.
+  $messenger = \Drupal::messenger();
+
+  // Get the hostname, username, and password from configuration.
+  $hostname = \Drupal::config('farm_sync.settings')->get('hostname');
+  $username = \Drupal::config('farm_sync.settings')->get('username');
+  $password = \Drupal::config('farm_sync.settings')->get('password');
+
+  // Create a new farmOS API instance.
+  $farmOS = new farmOS($hostname, $username, $password);
+
+  // Authenticate with farmOS.
+  $authenticated = $farmOS->authenticate();
+
+  // If authentication failed, print a message and bail.
+  if (empty($authenticated)) {
+    $message = t('farmOS authentication failed. Refer to the watchdog logs for more information.');
+    $messenger->addMessage($message, $messenger::TYPE_WARNING);
+    return FALSE;
+  }
+
+  // Return the farmOS API object.
+  return $farmOS;
+}
+
+
+/**
+ * Sync farm records to the database using a batch operation.
+ *
+ * @param array $args
+ *   An array of arguments, including:
+ *     'entity_type' - REQUIRED. The entity type of the records to sync.
+ *     'filters' - Any additional filters for farmOS::getRecords().
+ *     'vocabulary' - If 'entity_type' is 'taxonomy_term', specify the
+ *       vocabulary machine name. The batch will automatically look up the
+ *       vocabulary ID and add it as a filter.
+ * @param $context
+ *   The Batch API context.
+ */
+function farm_sync_batch($args = [], &$context) {
+
+  // Initialize the batch sandbox variables.
+  if (empty($context['sandbox'])) {
+    $context['sandbox'] = [];
+
+    // Copy the arguments into context.
+    foreach ($args as $key => $value) {
+      $context['sandbox'][$key] = $value;
+    }
+
+    // Create an API connection to farmOS and save it in the context.
+    // Bail if unsuccessful.
+    $context['sandbox']['farmOS'] = farm_sync_connect();
+    if (empty($context['sandbox']['farmOS'])) {
+      $context['finished'] = 1;
+      return;
+    }
+
+    // If the entity type is 'taxonomy_term', and a vocabulary machine name is
+    // provided, look up the vocabulary ID and add it to the filters.
+    if ($context['sandbox']['entity_type'] == 'taxonomy_term' && !empty($context['sandbox']['vocabulary'])) {
+      $context['sandbox']['filters']['vocabulary'] = $context['sandbox']['farmOS']->getVocabularyID($context['sandbox']['vocabulary']);
+      if (empty($context['sandbox']['filters']['vocabulary'])) {
+        $context['finished'] = 1;
+        return;
+      }
+    }
+
+    // Make an initial API request to count how many pages of records we will
+    // be processing. Bail if the page count is zero.
+    $context['sandbox']['pages'] = $context['sandbox']['farmOS']->pageCount($context['sandbox']['entity_type'], $context['sandbox']['filters']);
+    if (empty($context['sandbox']['pages'])) {
+      $context['finished'] = 1;
+      return;
+    }
+
+    // Set the current page filter to zero.
+    $context['sandbox']['filters']['page'] = 0;
+  }
+
+  // Retrieve the set of records.
+  $records = $context['sandbox']['farmOS']->getRecords($context['sandbox']['entity_type'], $context['sandbox']['filters']);
+
+  // Get a database connection and start a transaction.
+  $connection = \Drupal::database();
+  $txn = $connection->startTransaction();
+
+  // Iterate through the records and merge them into the database.
+  try {
+    foreach ($records as $record) {
+
+      // Define the database information.
+      /**
+       * @todo
+       * This only handles areas currently. Expand/refactor when new record
+       * types are added.
+       * @see https://github.com/mstenta/farm_sync/issues/1
+       */
+      if ($context['sandbox']['entity_type'] == 'taxonomy_term' && $context['sandbox']['vocabulary'] == 'farm_areas') {
+        $table = 'farm_sync_areas';
+        $key = ['area_id' => $record['tid']];
+        $fields = [
+          'name' => $record['name'],
+          'type' => $record['field_farm_area_type'],
+          'geom' => $record['field_farm_geofield'][0]['geom'],
+        ];
+      }
+
+      // If database information is available, merge.
+      if (!empty($table) && !empty($key) && !empty($fields)) {
+        $connection->merge($table)
+          ->key($key)
+          ->fields($fields)
+          ->execute();
+      }
+
+      // Add it to the results.
+      $context['results'][] = $record['tid'];
+    }
+  }
+  catch (\Exception $e) {
+    $txn->rollBack();
+    watchdog_exception('farm_sync', $e);
+  }
+
+  // Increment the page counter.
+  $context['sandbox']['filters']['page']++;
+
+  // Set the batch finished progress based on the page we're on.
+  $context['finished'] = $context['sandbox']['filters']['page'] / $context['sandbox']['pages'];
+}
+
+/**
+ * General batch finish callback.
+ */
+function farm_sync_batch_finished($success, $results, $operations) {
+
+  // Initialize the Drupal messenger.
+  $messenger = \Drupal::messenger();
+
+  // If the batch executed successfully, print a message with a count of the
+  // synced records.
+  if ($success) {
+    $messenger->addMessage(t('@count records synced.', ['@count' => count($results)]));
+  }
+
+  // If an error occurred, print a message with details.
+  else {
+    $error_operation = reset($operations);
+    $messenger->addMessage(
+      t('An error occurred while processing @operation with arguments : @args',
+        [
+          '@operation' => $error_operation[0],
+          '@args' => print_r($error_operation[0], TRUE),
+        ]
+      )
+    );
   }
 }
