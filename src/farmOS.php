@@ -117,15 +117,6 @@ class farmOS {
   /**
    * Generic method for retrieving terms from a given vocabulary.
    *
-   * There isn't a built-in way of filtering taxonomy terms by their vocabulary
-   * machine name (eg: 'farm_areas'). Instead you must filter by the vocabulary
-   * ID, which may be different on each farmOS instance (based on the order in
-   * which the vocabularies are created). So, we need to make two requests: one
-   * to get a list of all vocabularies, so that we can find the ID of the
-   * vocabulary, and a second request to get all terms in that vocabulary. This
-   * method abstracts those two requests into a single method, using the normal
-   * getRecords() method internally.
-   *
    * @param string $vocabulary
    *   The vocabulary machine name.
    * @param array $filters
@@ -137,58 +128,12 @@ class farmOS {
    */
   public function getTerms($vocabulary, $filters = []) {
 
-    // Start with an empty set of terms.
-    $terms = [];
-
-    // Get the vocabulary ID.
-    $vid = $this->getVocabularyID($vocabulary);
-
-    // If the vocabulary ID was not found, bail.
-    if (empty($vid)) {
-      return $terms;
-    }
-
     // Get a list of areas (taxonomy terms in the vocabulary).
-    $filters['vocabulary'] = $vid;
+    $filters['bundle'] = $vocabulary;
     $terms = $this->getRecords('taxonomy_term', $filters);
 
     // Return the terms.
     return $terms;
-  }
-
-  /**
-   * Generic method for getting a vocabulary ID.
-   *
-   * @param string $vocabulary
-   *   The machine name of the vocabulary.
-   *
-   * @return int
-   *   Returns the vocabulary ID.
-   */
-  public function getVocabularyID($vocabulary) {
-
-    // Start with an empty ID.
-    $vid = 0;
-
-    // Get a list of all vocabularies.
-    $vocabs = $this->getRecords('taxonomy_vocabulary');
-
-    // If no vocabularies were found, bail.
-    if (empty($vocabs)) {
-      return $vid;
-    }
-
-    // Find the vocabulary ID based on the machine name..
-    $vid = 0;
-    foreach ($vocabs as $vocab) {
-      if (!empty($vocab['machine_name']) && $vocab['machine_name'] == $vocabulary) {
-        $vid = $vocab['vid'];
-        break;
-      }
-    }
-
-    // Return the ID.
-    return $vid;
   }
 
   /**

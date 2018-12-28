@@ -63,8 +63,7 @@ function farm_sync_connect() {
  *     'entity_type' - REQUIRED. The entity type of the records to sync.
  *     'filters' - Any additional filters for farmOS::getRecords().
  *     'vocabulary' - If 'entity_type' is 'taxonomy_term', specify the
- *       vocabulary machine name. The batch will automatically look up the
- *       vocabulary ID and add it as a filter.
+ *       vocabulary machine name.
  * @param $context
  *   The Batch API context.
  */
@@ -85,16 +84,6 @@ function farm_sync_batch($args = [], &$context) {
     if (empty($context['sandbox']['farmOS'])) {
       $context['finished'] = 1;
       return;
-    }
-
-    // If the entity type is 'taxonomy_term', and a vocabulary machine name is
-    // provided, look up the vocabulary ID and add it to the filters.
-    if ($context['sandbox']['entity_type'] == 'taxonomy_term' && !empty($context['sandbox']['vocabulary'])) {
-      $context['sandbox']['filters']['vocabulary'] = $context['sandbox']['farmOS']->getVocabularyID($context['sandbox']['vocabulary']);
-      if (empty($context['sandbox']['filters']['vocabulary'])) {
-        $context['finished'] = 1;
-        return;
-      }
     }
 
     // Make an initial API request to count how many pages of records we will
@@ -127,7 +116,7 @@ function farm_sync_batch($args = [], &$context) {
        * types are added.
        * @see https://github.com/mstenta/farm_sync/issues/1
        */
-      if ($context['sandbox']['entity_type'] == 'taxonomy_term' && $context['sandbox']['vocabulary'] == 'farm_areas') {
+      if ($context['sandbox']['entity_type'] == 'taxonomy_term' && $context['sandbox']['filters']['bundle'] == 'farm_areas') {
         $table = 'farm_sync_areas';
         $key = ['area_id' => $record['tid']];
         $fields = [

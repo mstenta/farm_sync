@@ -106,16 +106,13 @@ class FarmSyncForm extends FormBase {
 
       // Switch through the supported record types to add additional arguments.
       // The farm_sync_batch() function expects 'entity_type' and 'filters' for
-      // use in the getRecords() method. If 'entity_type' is 'taxonomy_term' it
-      // also expects 'vocabulary' to be set to the vocabulary machine name.
-      // The vocabulary ID will be looked up automatically and added to the
-      // filters.
+      // use in the getRecords() method.
       switch ($type) {
 
         // Areas.
         case 'areas':
           $arguments['entity_type'] = 'taxonomy_term';
-          $arguments['vocabulary'] = 'farm_areas';
+          $arguments['filters']['bundle'] = 'farm_areas';
           $area_type = $form_state->getValue('area_type');
           if (!empty($area_type)) {
             $arguments['filters']['field_farm_area_type'] = $area_type;
