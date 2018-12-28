@@ -25,9 +25,11 @@ No special requirements.
   to protect access to this file in the same way that you would protect your
   database credentials. For example:
 
-    $config['farm_sync.settings']['hostname'] = 'myfarm.farmos.net';
-    $config['farm_sync.settings']['username'] = 'Jane Farmer';
-    $config['farm_sync.settings']['password'] = 'mypassword123';
+```
+$config['farm_sync.settings']['hostname'] = 'myfarm.farmos.net';
+$config['farm_sync.settings']['username'] = 'Jane Farmer';
+$config['farm_sync.settings']['password'] = 'mypassword123';
+```
 
 ## MAINTAINERS
 
