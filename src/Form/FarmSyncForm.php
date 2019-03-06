@@ -115,7 +115,7 @@ class FarmSyncForm extends FormBase {
           $arguments['filters']['bundle'] = 'farm_areas';
           $area_type = $form_state->getValue('area_type');
           if (!empty($area_type)) {
-            $arguments['filters']['field_farm_area_type'] = $area_type;
+            $arguments['filters']['area_type'] = $area_type;
           }
           break;
 

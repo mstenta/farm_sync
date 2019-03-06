@@ -121,8 +121,8 @@ function farm_sync_batch($args = [], &$context) {
         $key = ['area_id' => $record['tid']];
         $fields = [
           'name' => $record['name'],
-          'type' => $record['field_farm_area_type'],
-          'geom' => $record['field_farm_geofield'][0]['geom'],
+          'type' => $record['area_type'],
+          'geom' => $record['geofield'][0]['geom'],
         ];
       }
 
